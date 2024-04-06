@@ -15,13 +15,14 @@ class RolesController extends Controller
     {
         //filtro por nombre de rol
         $name = $request->search;
-        $roles = Role::where("name","like","%".name."%")->orderBy("id","desc")->get();
+        $roles = Role::where("name","like","%".$name."%")->orderBy("id","desc")->get();
         return response()->json([
             "roles" => $roles->map(function($rol){
                 return[
                     "id" => $rol,
                     "name" => $rol->name,
                     "permision" => $rol->permissions,
+                    "permision_pluck" => $rol->permissions->pluck("name"),
                     "created_at"=> $rol->created_at->format("Y-m-d h:i:s")
                 ];
             }),
