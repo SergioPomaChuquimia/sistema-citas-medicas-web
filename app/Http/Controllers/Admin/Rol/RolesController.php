@@ -19,7 +19,7 @@ class RolesController extends Controller
         return response()->json([
             "roles" => $roles->map(function($rol){
                 return[
-                    "id" => $rol,
+                    "id" => $rol->id,
                     "name" => $rol->name,
                     "permision" => $rol->permissions,
                     "permision_pluck" => $rol->permissions->pluck("name"),
@@ -63,7 +63,17 @@ class RolesController extends Controller
      */
     public function show(string $id)
     {
-        //
+       $role = Role::findOrFail($id);
+       return response()->json([
+     
+        "id" => $role->id,
+        "name" => $role->name,
+         "permision" => $role->permissions,
+        "permision_pluck" => $role->permissions->pluck("name"),
+        "created_at"=> $role->created_at->format("Y-m-d h:i:s")
+       
+    ]);
+       
     }
 
     /**
@@ -97,6 +107,12 @@ class RolesController extends Controller
     public function destroy(string $id)
     {
         $role = Role::findOrFail($id);
+        if($role -> users->count()>0){
+            return response()->json([
+                "message" => 403,
+                "message_text" => "EL ROL SELECCIONADO NO SE PUEDE ELIMINAR POR MOTIVOS QUE YA TIENE UN USUARIO RELACIONADO"
+            ]);
+        }
         $role->delete();
         return response()->json([
             "message" => 200,
