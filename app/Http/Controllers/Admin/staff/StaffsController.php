@@ -108,7 +108,7 @@ class StaffsController extends Controller
         }
 
         if($request->password){
-            $request->$request->add(["password"=>bcrypt($request->password)]);
+            $request->request->add(["password"=>bcrypt($request->password)]);
         }
         $date_clean = preg_replace('/\(.*\)|[A-Z]{3}-\d{4}/', '', $request->birth_date);
         $request->request->add(["birth_date" => Carbon::parse($date_clean)->format("Y-m-d h:i:s")]);
