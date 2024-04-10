@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\staff;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\User\UserCollection;
+use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -53,13 +54,15 @@ class StaffsController extends Controller
 
         if($request->hasFile("imagen")){
             $path = Storage::putFile("staffs", $request->file("imagen"));
-            $request->$request->add(["avatar"=>$path]);
+            $request->request->add(["avatar"=>$path]);
         }
 
         if($request->password){
-            $request->$request->add(["password"=>bcrypt($request->password)]);
+            $request->request->add(["password"=>bcrypt($request->password)]);
         }
 
+        $date_clean = preg_replace('/\(.*\)|[A-Z]{3}-\d{4}/', '', $request->birth_date);
+        $request->request->add(["birth_date" => Carbon::parse($date_clean)->format("Y-m-d h:i:s")]);
         $user = User::create($request->all());
 
         $role = Role::findOrFail($request->role_id);
@@ -107,7 +110,8 @@ class StaffsController extends Controller
         if($request->password){
             $request->$request->add(["password"=>bcrypt($request->password)]);
         }
-
+        $date_clean = preg_replace('/\(.*\)|[A-Z]{3}-\d{4}/', '', $request->birth_date);
+        $request->request->add(["birth_date" => Carbon::parse($date_clean)->format("Y-m-d h:i:s")]);
         $user->update($request->all());
 
         if($request->role_id != $user->roles()->first()->id){
