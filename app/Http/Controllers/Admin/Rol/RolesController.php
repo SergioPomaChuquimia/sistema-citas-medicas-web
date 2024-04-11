@@ -9,7 +9,7 @@ use App\Http\Controllers\Controller;
 class RolesController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource. Ejemplo de controlador 
      */
     public function index(Request $request)
     {
