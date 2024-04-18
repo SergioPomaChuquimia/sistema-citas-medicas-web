@@ -22,7 +22,9 @@ class RolesController extends Controller
                     "id" => $rol->id,
                     "name" => $rol->name,
                     "permision" => $rol->permissions,
-                    "permision_pluck" => $rol->permissions->pluck("name"),
+                     "permision_pluck" => $rol->permissions->pluck("name")->map(function ($name) {
+                        return $this->formatPermissionName($name);
+                    }),
                     "created_at"=> $rol->created_at->format("Y-m-d h:i:s")
                 ];
             }),
@@ -117,5 +119,10 @@ class RolesController extends Controller
         return response()->json([
             "message" => 200,
         ]);
+    }
+
+    private function formatPermissionName($name)
+    {
+        return ucwords(str_replace('_', ' ', $name));
     }
 }
