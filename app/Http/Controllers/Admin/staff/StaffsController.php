@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Admin\staff;
 
-use App\Http\Controllers\Controller;
-use App\Http\Resources\User\UserCollection;
 use Carbon\Carbon;
-use Spatie\Permission\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\User\UserCollection;
 Use Illuminate\Support\Facades\Storage;
 Use App\Http\Resources\User\UserResource;
 class StaffsController extends Controller
@@ -19,10 +20,14 @@ class StaffsController extends Controller
     {
         $search = $request->search;
 
-        $users = User::where("name","LIKE","%".$search."%")
-        ->orwhere("surname","LIKE","%".$search."%")
-        ->orwhere("email","LIKE","%".$search."%")
+        $users = User::where(DB::raw("CONCAT(users.name,' ',IFNULL(users.surname,''),' ',users.email)"),"like","%".$search."%")
+        //"name","like","%".$search."%"
+        //->orwhere("surname","LIKE","%".$search."%")
+        //->orwhere("email","LIKE","%".$search."%")
         ->orderBy("id","desc")
+        ->whereHas("roles",function($q){
+            $q->where("name","not like","%DOCTOR%");
+        })
         ->get();
         return response()->json([
             "users"=> UserCollection::make($users),
@@ -30,7 +35,7 @@ class StaffsController extends Controller
     }
 
     public function config(){
-        $roles = Role::all();
+        $roles = Role::where("name","not like","%DOCTOR%")->get();
 
         return response()->json([
             "roles"=> $roles
