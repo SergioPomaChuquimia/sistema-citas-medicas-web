@@ -97,6 +97,8 @@ class AppointmentController extends Controller
         DB::statement("SET lc_time_names = 'es_ES'");
 
         $name_day = Carbon::parse($date_appointment)->dayName;
+        // CONSULTA PARA SABER QUE DOCTOR CUMPLE CON LA DISPONIBILIDAD DE ATENCIÓN TENIENDO EN
+        //CUENTA EL DIA , HORA Y ESPECIALIDAD
         $doctor_query = DoctorScheduleDay::where("day","like","%".$name_day."%")
                                           ->whereHas("doctor",function($q) use($specialitie_id){
                                             $q->where("specialitie_id",$specialitie_id);
@@ -106,13 +108,17 @@ class AppointmentController extends Controller
                                             });
                                           })->get();
         $doctors = collect([]);
+        // ITERAMOS ENTRE LOS DOCTORES QUE RESULTARON DE LA CONSULTA
         foreach ($doctor_query as $doctor_q) {
+            // REVISAMOS SU DISPONIBILIDAD PARA ARROJAR LOS SEGMENTOS DE LA 
+            // HORA , INTERVALO DE 15 MINUTOS
             $segments = DoctorScheduleJoinHour::where("doctor_schedule_day_id",$doctor_q->id)
                                                 ->whereHas("doctor_schedule_hour",function($q) use($hour) {
                                                     $q->where("hour",$hour);
                                                 })->get();
-            
+            // ARMAMOS UNA LISTA DE DOCTORES CON LOS SEGMENTOS DE SU HORA (MARCAMOS CUALES SE ENCUENTRAN OCUPADOS)
             $doctors->push([
+                // DATOS DEL DOCTOR
                 "doctor" => [
                     "id" => $doctor_q->doctor->id,
                     "full_name" => $doctor_q->doctor->name .' '.$doctor_q->doctor->surname,
@@ -121,7 +127,13 @@ class AppointmentController extends Controller
                         "name" => $doctor_q->doctor->specialitie->name,
                     ],
                 ],
+                // DATOS DEL SEGMENTO EN UN FORMATO PARA EL FRONTEND
                 "segments" => $segments->map(function($segment) use($date_appointment){
+                    // ACA PODEMOS AVERIGUAR SI EL SEGMENTO YA SE ENCUENTRA OCUPADO POR OTRA CITA MEDICA
+                    // where("doctor_schedule_join_hour_id",$segment->id)
+                    // whereHas("doctor_schedule_join_hour",function($q) use($segment){
+                    //     $q->where("doctor_schedule_hour_id",$segment->doctor_schedule_hour->id);  
+                    //   })
                     $appointment = Appointment::whereHas("doctor_schedule_join_hour",function($q) use($segment){
                                                     $q->where("doctor_schedule_hour_id",$segment->doctor_schedule_hour_id);  
                                                 })
@@ -148,6 +160,28 @@ class AppointmentController extends Controller
 
         return response()->json([
             "doctors" => $doctors,
+        ]);
+    }
+
+    public function calendar(Request $request) {
+        
+        $specialitie_id = $request->specialitie_id;
+        $search_doctor = $request->search_doctor;
+        $search_patient = $request->search_patient;
+
+        $appointments = Appointment::filterAdvancePay($specialitie_id,$search_doctor,$search_patient,null,null)
+                    ->orderBy("id","desc")
+                    ->get();
+
+        return response()->json([
+            "appointments" => $appointments->map(function($appointment) {
+                return [
+                    "id" => $appointment->id,
+                    "title" => "CITA MEDICA - ".($appointment->doctor->name. ' '.$appointment->doctor->surname)." - ".$appointment->specialitie->name,
+                    "start" => Carbon::parse($appointment->date_appointment)->format("Y-m-d")."T".$appointment->doctor_schedule_join_hour->doctor_schedule_hour->hour_start,
+                    "end" => Carbon::parse($appointment->date_appointment)->format("Y-m-d")."T".$appointment->doctor_schedule_join_hour->doctor_schedule_hour->hour_end,
+                ];
+            })
         ]);
     }
 

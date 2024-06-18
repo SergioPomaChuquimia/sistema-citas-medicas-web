@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Resources\Appointment;
+namespace App\Http\Resources\Appointment\Pay;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AppointmentResource extends JsonResource
+class AppointmentPayResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -63,8 +63,16 @@ class AppointmentResource extends JsonResource
             ]: NULL,
             "amount" => $this->resource->amount,
             "status_pay" => $this->resource->status_pay,
-            "status" => $this->resource->status,
             "created_at" => $this->resource->created_at->format("Y-m-d h:i A"),
+            "payments" => $this->resource->payments->map(function($payment) {
+                return [
+                    "id" => $payment->id,
+                    "appointment_id" => $payment->appointment_id,
+                    "amount" => $payment->amount,
+                    "method_payment" => $payment->method_payment,
+                    "created_at" => $payment->created_at->format("Y-m-d h:i A"),
+                ];
+            }),
         ];
     }
 }
